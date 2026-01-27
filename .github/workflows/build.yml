@@ -81,8 +81,6 @@ jobs:
           echo "ZIP_PATH=${ZIP_PATH}" >> $GITHUB_ENV
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
-          wget https://github.com/Bush2021/chrome_plus/releases/download/1.14.0/Chrome++_v1.14.0_x86_x64_arm64.7z
-
       - name: 打包上传到Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
