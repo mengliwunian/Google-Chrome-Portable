@@ -34,10 +34,22 @@ jobs:
           chmod +x ./7zzs
           python3 -m pip install -r requirements.txt
           
-      - name: 下载文件
+      - name: 下载Chrome文件
         run: |
           python3 run.py
-          
+
+      - name: 下载Chrome++ 组件
+        run: |
+          wget -q https://github.com/Bush2021/chrome_plus/releases/download/1.14.0/Chrome++_v1.14.0_x86_x64_arm64.7z -O chrome_plus.7z
+
+          ./7zzs x chrome_plus.7z -o./ -y
+          rm -rf build/release/Chrome/version.dll
+          cp x64/App/version.dll build/release/Chrome/
+      
+          rm -f chrome_plus.7z
+          rm -rf arm64 x64 x86
+          echo "Chrome++ 组件准备就绪。"
+
       - name: 打包为ZIP
         id: package
         run: |
@@ -68,7 +80,9 @@ jobs:
           echo "BUILD_VERSION=${BUILD_VERSION}" >> $GITHUB_ENV
           echo "ZIP_PATH=${ZIP_PATH}" >> $GITHUB_ENV
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-            
+
+          wget https://github.com/Bush2021/chrome_plus/releases/download/1.14.0/Chrome++_v1.14.0_x86_x64_arm64.7z
+
       - name: 打包上传到Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
