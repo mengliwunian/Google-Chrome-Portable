@@ -1,30 +1,116 @@
-name: build
+name: Google-Chrome-Portable
 
 on:
+  repository_dispatch:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    - cron: "0 8 * * 1"
+
+#  schedule:
+#    - cron: 0 16 * * *
+
+env:
+  UPLOAD_RELEASE: true
+  REPO_URL: https://github.com/${{ github.repository }}
+  TZ: Asia/Shanghai
 
 jobs:
   Warp_Chrome:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-python@v4.7.1
         with:
           python-version: '3.10'
-      - run: ls
-      - name: prepare env
+          
+      - name: 初始化编译环境
         run: |
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq install p7zip-full
+          wget https://github.com/ip7z/7zip/releases/download/25.01/7z2501-linux-x64.tar.xz
+          tar -xf 7z2501-linux-x64.tar.xz
+          chmod +x ./7zzs
           python3 -m pip install -r requirements.txt
+          
+      - name: 下载文件
+        run: |
           python3 run.py
-      - name: upload
+          
+      - name: 打包为ZIP
+        id: package
+        run: |
+          for dir in build/release/Chrome/*/; do
+                  if [ -d "$dir" ]; then
+                    version=$(basename "$dir")
+                    echo "推断出版本: $version"
+                    break
+                  fi
+                  done
+
+          if [ -z "$version" ]; then
+            echo "错误：无法确定 Chrome 版本号。"
+            exit 1
+          fi
+
+          FINAL_BUILD_NAME="Win_x64_${version}_$(date +'%Y-%m-%d')"
+          BUILD_VERSION="Win64_${version}"
+          ZIP_NAME="${FINAL_BUILD_NAME}.7z"
+          ZIP_PATH="build/release/${ZIP_NAME}"
+      
+          echo "构建名称: $FINAL_BUILD_NAME"
+          echo "打包到: $ZIP_PATH"
+          
+          ./7zzs a -t7z "${ZIP_PATH}" ./build/release/Chrome
+
+          echo "BUILD_NAME=${FINAL_BUILD_NAME}" >> $GITHUB_ENV
+          echo "BUILD_VERSION=${BUILD_VERSION}" >> $GITHUB_ENV
+          echo "ZIP_PATH=${ZIP_PATH}" >> $GITHUB_ENV
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+            
+      - name: 打包上传到Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BUILD_NAME }}
-          path: build/release/*
+          name: Chrome-${FINAL_BUILD_NAME}
+          path: |
+            build/release/Chrome/
+            $ZIP_PATH  # 使用上一步设置的环境变量
           retention-days: 15
+
+      - name: 生成Release标签
+        id: tag
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        run: |
+          touch release.txt
+          echo "- **自动构建**：便携版Chrome_${{ env.BUILD_NAME }}" >> release.txt
+          echo "- **版本**：${{ env.BUILD_VERSION }}" >> release.txt
+          echo "- **构建时间**：$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> release.txt
+          echo "- **包含组件**：Chrome主程序、version.dll、chrome++.ini" >> release.txt
+          echo "- **使用方式**：解压后直接运行 `Chrome.exe`" >> release.txt
+
+          echo "status=success" >> $GITHUB_OUTPUT
+
+          
+      - name: 发布至Release
+        uses: softprops/action-gh-release@v2.1.0
+        if: steps.tag.outputs.status == 'success' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Chrome_Portable_${{ env.BUILD_NAME }}
+          tag_name: ${{ env.BUILD_NAME }}
+          files: ${{ env.ZIP_PATH }}
+          body_path: release.txt
+          draft: false
+          prerelease: false
+
+          
+      - name: 清理磁盘
+        run: |
+          rm -rf build/release
+          rm -rf release_files
+          rm -rf 7z2501-linux-x64
+          rm -f release_notes.md
+          rm -f chrome.7z.exe
+          rm -f 7zzs
