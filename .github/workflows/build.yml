@@ -28,7 +28,7 @@ jobs:
       - name: 初始化编译环境
         run: |
           sudo -E apt-get -qq update
-          sudo -E apt-get -qq install p7zip-full
+          sudo -E apt-get -qq install p7zip-full jq
           wget https://github.com/ip7z/7zip/releases/download/25.01/7z2501-linux-x64.tar.xz
           tar -xf 7z2501-linux-x64.tar.xz
           chmod +x ./7zzs
@@ -40,8 +40,8 @@ jobs:
 
       - name: 下载Chrome++ 组件
         run: |
-          wget -q https://github.com/Bush2021/chrome_plus/releases/download/1.14.0/Chrome++_v1.14.0_x86_x64_arm64.7z -O chrome_plus.7z
-
+          #wget -q https://github.com/Bush2021/chrome_plus/releases/download/1.14.0/Chrome++_v1.14.0_x86_x64_arm64.7z -O chrome_plus.7z
+          curl -s https://api.github.com/repos/Bush2021/chrome_plus/releases/latest | jq -r '.assets[] | select(.name | contains("x86_x64_arm64.7z")) | .browser_download_url' | head -n1 | xargs -r curl -L -o chrome_plus.7z
           ./7zzs x chrome_plus.7z -o./ -y
           rm -rf build/release/Chrome/version.dll
           cp x64/App/version.dll build/release/Chrome/
