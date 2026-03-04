@@ -71,7 +71,7 @@ jobs:
             exit 1
           fi
 
-          FINAL_BUILD_NAME="Win_x64_${version}_$(date +'%Y-%m-%d')"
+          FINAL_BUILD_NAME="Chrome_Win_x64_${version}_$(date +'%Y-%m-%d')"
           BUILD_VERSION="Win64_${version}"
           ZIP_NAME="${FINAL_BUILD_NAME}.7z"
           ZIP_PATH="build/release/${ZIP_NAME}"
