@@ -3,9 +3,8 @@ name: Google-Chrome-Portable
 on:
   repository_dispatch:
   workflow_dispatch:
-
-#  schedule:
-#    - cron: 0 16 * * *
+  schedule:
+    - cron: 30 11 22 * *
 
 env:
   UPLOAD_RELEASE: true
