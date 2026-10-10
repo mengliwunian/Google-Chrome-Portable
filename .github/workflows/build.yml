@@ -47,6 +47,7 @@ jobs:
           if [ -f "x64/App/version.dll" ]; then
             rm -f build/release/Chrome/version.dll
             cp x64/App/version.dll build/release/Chrome/
+            cp x64/App/chrome++.ini build/release/Chrome/chrome++.ini.bak
             echo "Chrome++ 组件已经替换为最新版。"
           fi
       
